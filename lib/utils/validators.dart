@@ -1,33 +1,111 @@
-/// Kumpulan fungsi validasi dan sanitasi input.
-///
-/// Class ini menyediakan method statis untuk memvalidasi input
-/// pengguna dan membersihkan karakter berbahaya.
 class Validators {
-  /// Memvalidasi format email.
-  ///
-  /// Mengembalikan `true` jika [email] memiliki format yang valid.
-  static bool isValidEmail(String email) {
-    final regex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
-    return regex.hasMatch(email);
+  /// Memvalidasi field wajib diisi
+  static String? validateRequired(String? value, String fieldName) {
+    if (value == null || value.trim().isEmpty) {
+      return '$fieldName tidak boleh kosong';
+    }
+    return null;
   }
 
-  /// Memvalidasi bahwa [value] tidak kosong.
-  static bool isNotEmpty(String? value) {
-    return value != null && value.trim().isNotEmpty;
+  /// Memvalidasi format email (mengembalikan pesan error atau null)
+  static String? validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Email tidak boleh kosong';
+    }
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value.trim())) {
+      return 'Format email tidak valid';
+    }
+    return null;
   }
 
-  /// Memvalidasi panjang [value] antara [min] dan [max].
-  static bool hasValidLength(String value, {int min = 1, int max = 100}) {
-    final length = value.trim().length;
-    return length >= min && length <= max;
+  /// Latihan 3a) Memvalidasi nomor telepon:
+  /// - Tidak boleh kosong
+  /// - Hanya boleh berisi angka (0-9)
+  /// - Panjang antara 10 hingga 13 digit
+  static String? validatePhone(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Nomor telepon tidak boleh kosong';
+    }
+
+    final trimmed = value.trim();
+    final phoneRegex = RegExp(r'^[0-9]{10,13}$');
+
+    if (!phoneRegex.hasMatch(trimmed)) {
+      return 'Nomor telepon harus berupa 10-13 digit angka';
+    }
+
+    return null;
   }
 
-  /// Membersihkan input dari karakter berbahaya.
-  ///
-  /// Mengganti karakter `<`, `>`, `"`, dan `'` dengan HTML entities
-  /// untuk mencegah XSS.
+  /// Latihan 3b) Memvalidasi format URL:
+  /// - Tidak boleh kosong
+  /// - Harus diawali dengan http:// atau https://
+  /// - Memiliki nama domain yang valid tanpa spasi
+  static String? validateUrl(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'URL tidak boleh kosong';
+    }
+
+    final trimmed = value.trim();
+    final urlRegex = RegExp(
+      r'^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$',
+      caseSensitive: false,
+    );
+
+    if (!urlRegex.hasMatch(trimmed)) {
+      return 'URL harus valid dan dimulai dengan http:// atau https://';
+    }
+
+    return null;
+  }
+
+  /// Latihan 3c) Memvalidasi kekuatan password:
+  /// - Tidak boleh kosong
+  /// - Minimal 8 karakter
+  /// - Mengandung minimal satu huruf kapital (A-Z)
+  /// - Mengandung minimal satu angka (0-9)
+  /// - Mengandung minimal satu simbol/karakter spesial
+  static String? validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Password tidak boleh kosong';
+    }
+
+    if (value.length < 8) {
+      return 'Password minimal 8 karakter';
+    }
+
+    if (!RegExp(r'[A-Z]').hasMatch(value)) {
+      return 'Password harus mengandung minimal 1 huruf kapital';
+    }
+
+    if (!RegExp(r'[0-9]').hasMatch(value)) {
+      return 'Password harus mengandung minimal 1 angka';
+    }
+
+    if (!RegExp(r'[!@#\$%^&*(),.?":{}|<>_\-+=\[\]\\\/~`]').hasMatch(value)) {
+      return 'Password harus mengandung minimal 1 simbol';
+    }
+
+    return null;
+  }
+
+  /// Latihan 5a) Mengecek apakah format email valid (mengembalikan bool)
+  static bool isValidEmail(String? value) {
+    return validateEmail(value) == null;
+  }
+
+  /// Latihan 5b) Membersihkan karakter HTML/script berbahaya (mencegah XSS)
   static String sanitize(String input) {
     return input
+        .replaceAll(
+          RegExp(
+            r'<script[^>]*>.*?</script>',
+            caseSensitive: false,
+            dotAll: true,
+          ),
+          '',
+        )
         .replaceAll('<', '&lt;')
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
@@ -35,31 +113,22 @@ class Validators {
         .trim();
   }
 
-  /// Memvalidasi dan membersihkan input teks.
-  ///
-  /// Mengembalikan pesan error jika tidak valid, atau `null` jika valid.
+  /// Latihan 5c) Memvalidasi teks berdasarkan panjang minimal dan maksimal
   static String? validateText(
     String? value, {
-    String fieldName = 'Field',
-    int minLength = 1,
+    String fieldName = 'Teks',
+    int minLength = 3,
     int maxLength = 100,
   }) {
     if (value == null || value.trim().isEmpty) {
       return '$fieldName tidak boleh kosong';
     }
-    if (!hasValidLength(value, min: minLength, max: maxLength)) {
-      return '$fieldName harus antara $minLength-$maxLength karakter';
+    final trimmed = value.trim();
+    if (trimmed.length < minLength) {
+      return '$fieldName minimal $minLength karakter';
     }
-    return null;
-  }
-
-  /// Memvalidasi dan membersihkan email.
-  static String? validateEmail(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Email tidak boleh kosong';
-    }
-    if (!isValidEmail(value.trim())) {
-      return 'Format email tidak valid';
+    if (trimmed.length > maxLength) {
+      return '$fieldName maksimal $maxLength karakter';
     }
     return null;
   }
